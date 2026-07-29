@@ -34,7 +34,7 @@ table(Biomarker_Data$madc_dx)
 library("gtsummary")
 Biomarker_Data2 <- Biomarker_Data %>% filter(Cognitive_Status == "Cognitively unimpaired" | Cognitive_Status == "MCI" | Cognitive_Status == "AD") %>% filter(Race == "White" | Race == "Black") %>% dplyr::select(Cognitive_Status, tau, pT181, aBeta42, aBeta40, `aBeta 42:40`, pT217, GFAP, NfL, APOE_Coll, BMI, Age, Race, sex,  Education_Coll, Stroke,	Cancer,	Diabetes,	MI, `Depression in last 2yrs`,	Hypertension,	Hypercholesterolemia,	`Sleep Apnea`,	`Atrial Fibrillation`)
 Biomarker_Data2 %>% tbl_summary(missing_text = "(Missing)", label = c(BMI ~ "BMI (pg/mL)", tau ~ "tTau (pg/mL)", pT181 ~ "pT181 (pg/mL)", aBeta42 ~ "aB42 (pg/mL)", aBeta40 ~ "aB40 (pg/mL)", `aBeta 42:40` ~ "aBeta 42:40", GFAP ~ "GFAP (pg/mL)",pT217 ~ "pT217 (pg/mL)", NfL ~ "NfL (pg/mL)", Education_Coll ~ "Education", APOE_Coll ~ "APOE" ), digits = list(everything() ~ c(3))) %>% bold_labels() %>% modify_caption("**Summary table**")
-```
+
 
 Biomarker_Data2 %>% filter(Cognitive_Status == "Cognitively unimpaired" | Cognitive_Status == "MCI" | Cognitive_Status == "AD") %>% filter(Race == "White" | Race == "Black") %>%
   tbl_summary(
