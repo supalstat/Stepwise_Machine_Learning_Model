@@ -81,7 +81,7 @@ library(ggplot2)
 library(metafor)
 library(ggpubr)
 library(dplyr)
-```
+
 
 Forest_plot_data = Biomarker_Dataa %>% dplyr::select( pT181, pT217, APOE_Coll, BMI, Age, Race, sex,  Education_Coll, GFAP, NfL,tau, aBeta42, aBeta40, ratio_of_aB42_and_40, ratio_of_p181_and_aB42, Stroke,	Cancer,	Diabetes,	MI, `Depression in last 2yrs`,	Hypertension,	Hypercholesterolemia,	`Sleep Apnea`,`Atrial Fibrillation`)
 Forest_plot_data[1 : 2] <- as.data.frame(scale(Forest_plot_data[1 : 2]))
@@ -233,7 +233,7 @@ AUC
 
 ##### Model with demographic variables, pT217, pT181, and GFAP
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
 mod_dem11 = multinom(Cognitive_Status ~ Age + Race + sex + Education_Coll  + pT217 + pT181 + GFAP, data = train1)
 summary(mod_dem11)
 
@@ -279,7 +279,7 @@ test_dem11 = round((sum(diag(ta1_test_dem11))/sum(ta1_test_dem11))*100, 2)
 
 round(train_dem11,0)
 round(test_dem11,0)
-```
+
 
 
 
