@@ -19,16 +19,6 @@ library(car)
 library(mice)
 library(ggpubr)
 
-Biomarker_demo <- read_excel("Downloads/Biomarker_demo.xlsx")
-Biomarker_Biom <- read_excel("Downloads/Biomarker_Biom.xlsx")
-Final_Merged = left_join(Biomarker_demo, Biomarker_Biom, by= c('ID' = 'ID', 'madc_dx' = 'madc_dx'))
-Biomarker_Comorbidities <- read_excel("Downloads/Biomarker_Comorbidities.xlsx")
-Biomarker_Data = left_join(Final_Merged, Biomarker_Comorbidities, by= c('ID' = 'ID', 'madc_dx' = 'madc_dx'))
-
-
-table(Biomarker_Data$madc_dx)
-
-
 
 
 library("gtsummary")
@@ -48,12 +38,6 @@ Biomarker_Data2 %>% filter(Cognitive_Status == "Cognitively unimpaired" | Cognit
 
 
 
-datamat1 = cor(Data_corr[,c(2,3,4,5,6,11, 12, 13)], use="pairwise.complete.obs")
-colnames(datamat1) = c("tau", "pT181", "aB42", "aB40", "a42:40", "GFAP", "NfL" , "pT217")
-rownames(datamat1) = c("tau", "pT181", "aB42", "aB40", "a42:40", "GFAP", "NfL" , "pT217")
-corrplot.mixed(datamat1, upper = 'number', lower = 'ellipse', addCoef.col = 1, bg = "white", addgrid.col = "grey")
-
-
 ggboxplot(Biomarker_Data2, x = "Cognitive_Status" , y = "pT181", color = "Cognitive_Status" ,  palette = c("#00AFBB", "#E7B800", "#FC4E07"), order = c("Cognitively unimpaired", "MCI", "AD"), ylab = "pT181", xlab = "Cognitive Status", remove = NA) + stat_compare_means(method = "t.test", ref.group = "Cognitively unimpaired") + ggtitle("Boxplot of pT181")
 
 
@@ -71,7 +55,6 @@ my_qqplott = function(.data, .title) {
 }
 qqplots = Biomarker_Data21 %>% split(.$name) %>% imap(my_qqplott)
 
-qqplots$aBeta40
 
 
 
