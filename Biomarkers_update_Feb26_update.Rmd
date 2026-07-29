@@ -353,7 +353,7 @@ step_ta1_test
 train_st = round((sum(diag(step_ta1_train))/sum(step_ta1_train))*100, 2)
 #round((sum(diag(ta1_test))/sum(ta1_test))*100, 2)
 test_st = round((sum(diag(step_ta1_test))/sum(step_ta1_test))*100, 2)
-```
+
 
 
 ##### ROC Curve for Stepwise model:
