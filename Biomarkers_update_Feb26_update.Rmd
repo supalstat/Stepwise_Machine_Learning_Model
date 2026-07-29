@@ -3,14 +3,8 @@ title: "Biomarker Analysis with New Data"
 author: "Subhamoy"
 date: "`r Sys.Date()`"
 output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
-```
 
 
-```{r, echo=FALSE, include=FALSE}
 library(gtsummary)
 library(MASS)
 library(sjlabelled)
@@ -20,187 +14,29 @@ library(dplyr)
 library(readr)
 #Final_Merged <- read_csv("Downloads/2023-08-24 Final Merged.csv")
 library(readxl)
-```
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-Biomarker_demo <- read_excel("Downloads/Biomarker_demo.xlsx")
-Biomarker_Biom <- read_excel("Downloads/Biomarker_Biom.xlsx")
-Final_Merged = left_join(Biomarker_demo, Biomarker_Biom, by= c('ID' = 'ID', 'madc_dx' = 'madc_dx'))
-Biomarker_Comorbidities <- read_excel("Downloads/Biomarker_Comorbidities.xlsx")
-#Biomarker_Data = Final_Merged
-```
-
-
-
-```{r, include=FALSE}
-Biomarker_Data = left_join(Final_Merged, Biomarker_Comorbidities, by= c('ID' = 'ID', 'madc_dx' = 'madc_dx'))
-```
-
-
-
-
-
-```{r, include=FALSE}
 library(readxl)
 library(VIM)
 library(car)
 library(mice)
+library(ggpubr)
 
-```
+Biomarker_demo <- read_excel("Downloads/Biomarker_demo.xlsx")
+Biomarker_Biom <- read_excel("Downloads/Biomarker_Biom.xlsx")
+Final_Merged = left_join(Biomarker_demo, Biomarker_Biom, by= c('ID' = 'ID', 'madc_dx' = 'madc_dx'))
+Biomarker_Comorbidities <- read_excel("Downloads/Biomarker_Comorbidities.xlsx")
+Biomarker_Data = left_join(Final_Merged, Biomarker_Comorbidities, by= c('ID' = 'ID', 'madc_dx' = 'madc_dx'))
 
-##### Analyzing fluid biomarkers for association with cognitive status.
 
-##### Biomarker core and Data core collaboration.
-
-##### Data: 338 observations from 338 participants. 2 observations are deleted other small race categories. 
-
-```{r, echo=FALSE}
 table(Biomarker_Data$madc_dx)
-```
-
-
-```{r, echo=FALSE, warning=FALSE}
-Biomarker_Data$Cognitive_Status = NA
-Biomarker_Data [which(Biomarker_Data$madc_dx == 'aMCI' ), 'Cognitive_Status'] = "MCI"
-Biomarker_Data [which(Biomarker_Data$madc_dx == 'naMCI'), 'Cognitive_Status'] = "MCI"
-Biomarker_Data [which(Biomarker_Data$madc_dx == 'AD'), 'Cognitive_Status'] = "AD"
-Biomarker_Data [which(Biomarker_Data$madc_dx == 'NL'), 'Cognitive_Status'] = "Cognitively unimpaired"
-Biomarker_Data$Cognitive_Status = factor(Biomarker_Data$Cognitive_Status, c("Cognitively unimpaired", "MCI", "AD"))
-```
 
 
 
 
-
-```{r, warning=FALSE, echo=FALSE}
-Biomarker_Data$APOE_= NA
-Biomarker_Data[which(Biomarker_Data$APOE == 1), 'APOE_'] ='1 (e3/e3)'
-Biomarker_Data[which(Biomarker_Data$APOE == 2), 'APOE_'] ='2 (e3/e4)'
-Biomarker_Data[which(Biomarker_Data$APOE == 3), 'APOE_'] ='3 (e3/e2)'
-Biomarker_Data[which(Biomarker_Data$APOE == 4), 'APOE_'] ='4 (e4/e4)'
-Biomarker_Data[which(Biomarker_Data$APOE == 5), 'APOE_'] ='5 (e4/e2)'
-Biomarker_Data[which(Biomarker_Data$APOE == 6), 'APOE_'] ='6 (e2/e2)'
-
-
-Biomarker_Data$APOE_Coll= NA
-Biomarker_Data[which(Biomarker_Data$APOE == 1), 'APOE_Coll'] ='no e4'
-Biomarker_Data[which(Biomarker_Data$APOE == 2), 'APOE_Coll'] ='any e4'
-Biomarker_Data[which(Biomarker_Data$APOE == 3), 'APOE_Coll'] ='no e4'
-Biomarker_Data[which(Biomarker_Data$APOE == 4), 'APOE_Coll'] ='any e4'
-Biomarker_Data[which(Biomarker_Data$APOE == 5), 'APOE_Coll'] ='any e4'
-Biomarker_Data[which(Biomarker_Data$APOE == 6), 'APOE_Coll'] ='no e4'
-
-
-Biomarker_Data$APOE_coll= NA
-Biomarker_Data[which(Biomarker_Data$APOE == 1), 'APOE_coll'] =1
-Biomarker_Data[which(Biomarker_Data$APOE == 2), 'APOE_coll'] =2
-Biomarker_Data[which(Biomarker_Data$APOE == 3), 'APOE_coll'] =1
-Biomarker_Data[which(Biomarker_Data$APOE == 4), 'APOE_coll'] =2
-Biomarker_Data[which(Biomarker_Data$APOE == 5), 'APOE_coll'] =2
-Biomarker_Data[which(Biomarker_Data$APOE == 6), 'APOE_coll'] =1
-
-Biomarker_Data$Education_ = NA
-Biomarker_Data[which(Biomarker_Data$Education == 8), 'Education_'] =  "08 years"
-Biomarker_Data[which(Biomarker_Data$Education == 9), 'Education_'] =  "09 years"
-Biomarker_Data[which(Biomarker_Data$Education == 12), 'Education_'] = "12 years"
-Biomarker_Data[which(Biomarker_Data$Education == 13), 'Education_'] = "13 years"
-Biomarker_Data[which(Biomarker_Data$Education == 14), 'Education_'] = "14 years"
-Biomarker_Data[which(Biomarker_Data$Education == 15), 'Education_'] = "15 years"
-Biomarker_Data[which(Biomarker_Data$Education == 16), 'Education_'] = "16 years"
-Biomarker_Data[which(Biomarker_Data$Education == 17), 'Education_'] = "17 years"
-Biomarker_Data[which(Biomarker_Data$Education == 18), 'Education_'] =  "18 years"
-Biomarker_Data[which(Biomarker_Data$Education == 19), 'Education_'] =  "19 years"
-Biomarker_Data[which(Biomarker_Data$Education == 20), 'Education_'] = "20 years"
-
-Biomarker_Data$Education_Coll = NA
-Biomarker_Data[which(Biomarker_Data$Education_ == "08 years"),  'Education_Coll'] = "High school or less"
-Biomarker_Data[which(Biomarker_Data$Education_ == "09 years"),  'Education_Coll'] = "High school or less"
-Biomarker_Data[which(Biomarker_Data$Education_ == "12 years"), 'Education_Coll'] = "High school or less"
-Biomarker_Data[which(Biomarker_Data$Education_ == "13 years"), 'Education_Coll'] = "College graduate"
-Biomarker_Data[which(Biomarker_Data$Education_ == "14 years"), 'Education_Coll'] =  "College graduate"
-Biomarker_Data[which(Biomarker_Data$Education_ == "15 years"), 'Education_Coll'] =  "College graduate"
-Biomarker_Data[which(Biomarker_Data$Education_ == "16 years"), 'Education_Coll'] =  "College graduate"
-Biomarker_Data[which(Biomarker_Data$Education_ == "17 years"), 'Education_Coll'] =  "College graduate"
-Biomarker_Data[which(Biomarker_Data$Education_ ==  "18 years"), 'Education_Coll'] = "Professional degree"
-Biomarker_Data[which(Biomarker_Data$Education_ ==  "19 years"), 'Education_Coll'] = "Professional degree"
-Biomarker_Data[which(Biomarker_Data$Education_ == "20 years"), 'Education_Coll'] = "Professional degree"
-Biomarker_Data$Education_Coll = factor(Biomarker_Data$Education_Coll, c("High school or less", "College graduate", "Professional degree"))
-
-#Biomarker_Data$Education_Coll = NA
-#Biomarker_Data[which(Biomarker_Data$Education_ == "08 years"),  'Education_Coll'] = "less than college graduate"
-#Biomarker_Data[which(Biomarker_Data$Education_ == "09 years"),  'Education_Coll'] = "less than college graduate"
-#Biomarker_Data[which(Biomarker_Data$Education_ == "12 years"), 'Education_Coll'] = "less than college graduate"
-#Biomarker_Data[which(Biomarker_Data$Education_ == "13 years"), 'Education_Coll'] = "less than college graduate"
-#Biomarker_Data[which(Biomarker_Data$Education_ == "14 years"), 'Education_Coll'] =  "less than college graduate"
-#Biomarker_Data[which(Biomarker_Data$Education_ == "15 years"), 'Education_Coll'] =  "less than college graduate"
-#Biomarker_Data[which(Biomarker_Data$Education_ == "16 years"), 'Education_Coll'] =  "College graduate and more"
-#Biomarker_Data[which(Biomarker_Data$Education_ == "17 years"), 'Education_Coll'] =  "College graduate and more"
-#Biomarker_Data[which(Biomarker_Data$Education_ ==  "18 years"), 'Education_Coll'] = "College graduate and more"
-#Biomarker_Data[which(Biomarker_Data$Education_ ==  "19 years"), 'Education_Coll'] = "College graduate and more"
-#Biomarker_Data[which(Biomarker_Data$Education_ == "20 years"), 'Education_Coll'] = "College graduate and more"
-#Biomarker_Data$Education_Coll = factor(Biomarker_Data$Education_Coll, c("less than college graduate", "College graduate and more"))
-
-
-Biomarker_Data$Education_coll = NA
-Biomarker_Data[which(Biomarker_Data$Education == 8), 'Education_coll'] = 1
-Biomarker_Data[which(Biomarker_Data$Education == 9), 'Education_coll'] = 1
-Biomarker_Data[which(Biomarker_Data$Education == 12), 'Education_coll'] =1
-Biomarker_Data[which(Biomarker_Data$Education == 13), 'Education_coll'] =2
-Biomarker_Data[which(Biomarker_Data$Education == 14), 'Education_coll'] =2
-Biomarker_Data[which(Biomarker_Data$Education == 15), 'Education_coll'] =2
-Biomarker_Data[which(Biomarker_Data$Education == 16), 'Education_coll'] =2
-Biomarker_Data[which(Biomarker_Data$Education == 17), 'Education_coll'] = 2
-Biomarker_Data[which(Biomarker_Data$Education == 18), 'Education_coll'] = 3
-Biomarker_Data[which(Biomarker_Data$Education == 19), 'Education_coll'] = 3
-Biomarker_Data[which(Biomarker_Data$Education == 20), 'Education_coll'] = 3
-
-
-#Biomarker_Data$Education_coll = NA
-#Biomarker_Data[which(Biomarker_Data$Education == 8), 'Education_coll'] = 1
-#Biomarker_Data[which(Biomarker_Data$Education == 9), 'Education_coll'] = 1
-#Biomarker_Data[which(Biomarker_Data$Education == 12), 'Education_coll'] =1
-#Biomarker_Data[which(Biomarker_Data$Education == 13), 'Education_coll'] =1
-#Biomarker_Data[which(Biomarker_Data$Education == 14), 'Education_coll'] =1
-#Biomarker_Data[which(Biomarker_Data$Education == 15), 'Education_coll'] =1
-#Biomarker_Data[which(Biomarker_Data$Education == 16), 'Education_coll'] =2
-#Biomarker_Data[which(Biomarker_Data$Education == 17), 'Education_coll'] = 2
-#Biomarker_Data[which(Biomarker_Data$Education == 18), 'Education_coll'] = 2
-#Biomarker_Data[which(Biomarker_Data$Education == 19), 'Education_coll'] = 2
-#Biomarker_Data[which(Biomarker_Data$Education == 20), 'Education_coll'] = 2
-
-
-
-
-
-Biomarker_Data$Race = NA
-Biomarker_Data[which(Biomarker_Data$race_value == 1), 'Race'] = 'White'
-Biomarker_Data[which(Biomarker_Data$race_value == 2), 'Race'] = 'Black'
-Biomarker_Data[which(Biomarker_Data$race_value == 3), 'Race'] = NA
-Biomarker_Data[which(Biomarker_Data$race_value == 50), 'Race'] = NA
-Biomarker_Data$sex = NA
-Biomarker_Data[which(Biomarker_Data$sex_value == 1), 'sex'] = 'Male'
-Biomarker_Data[which(Biomarker_Data$sex_value == 2), 'sex'] = 'Female'
-
-#Biomarker_Data
-
-```
-
-
-
-
-
-
-```{r , echo=FALSE, warning=FALSE}
 library("gtsummary")
 Biomarker_Data2 <- Biomarker_Data %>% filter(Cognitive_Status == "Cognitively unimpaired" | Cognitive_Status == "MCI" | Cognitive_Status == "AD") %>% filter(Race == "White" | Race == "Black") %>% dplyr::select(Cognitive_Status, tau, pT181, aBeta42, aBeta40, `aBeta 42:40`, pT217, GFAP, NfL, APOE_Coll, BMI, Age, Race, sex,  Education_Coll, Stroke,	Cancer,	Diabetes,	MI, `Depression in last 2yrs`,	Hypertension,	Hypercholesterolemia,	`Sleep Apnea`,	`Atrial Fibrillation`)
 Biomarker_Data2 %>% tbl_summary(missing_text = "(Missing)", label = c(BMI ~ "BMI (pg/mL)", tau ~ "tTau (pg/mL)", pT181 ~ "pT181 (pg/mL)", aBeta42 ~ "aB42 (pg/mL)", aBeta40 ~ "aB40 (pg/mL)", `aBeta 42:40` ~ "aBeta 42:40", GFAP ~ "GFAP (pg/mL)",pT217 ~ "pT217 (pg/mL)", NfL ~ "NfL (pg/mL)", Education_Coll ~ "Education", APOE_Coll ~ "APOE" ), digits = list(everything() ~ c(3))) %>% bold_labels() %>% modify_caption("**Summary table**")
 ```
 
-##### Now we will see the summary of all variables by diagnosis categories. 
-
-```{r, echo=FALSE, warning=FALSE}
 Biomarker_Data2 %>% filter(Cognitive_Status == "Cognitively unimpaired" | Cognitive_Status == "MCI" | Cognitive_Status == "AD") %>% filter(Race == "White" | Race == "Black") %>%
   tbl_summary(
     by = Cognitive_Status,
@@ -210,155 +46,50 @@ Biomarker_Data2 %>% filter(Cognitive_Status == "Cognitively unimpaired" | Cognit
     label = c(BMI ~ "BMI (pg/mL)", tau ~ "tTau (pg/mL)", pT181 ~ "pT181 (pg/mL)", aBeta42 ~ "aB42 (pg/mL)", aBeta40 ~ "aB40 (pg/mL)", GFAP ~ "GFAP (pg/mL)", NfL ~ "NfL (pg/mL)", pT217 ~ "pT217 (pg/mL)", Education_Coll ~ "Education", APOE_Coll ~ "APOE", `aBeta 42:40` ~ "aBeta 42:40" ),
     missing_text = "(Missing)"
   ) %>% add_p() %>% bold_labels() %>% modify_caption("**Summary table: Different cognitive status**")
-```
 
 
 
-
-
-#### Correlation Plot:
-
-```{r, include=FALSE}
-library(corrplot)
-#library(GGally)
-Data_corr = data.frame(Biomarker_Data$Cognitive_Status, Biomarker_Data$tau, Biomarker_Data$pT181, Biomarker_Data$aBeta42, Biomarker_Data$aBeta40, Biomarker_Data$`aBeta 42:40`, Biomarker_Data$Age, Biomarker_Data$BMI, Biomarker_Data$Race, Biomarker_Data$sex, Biomarker_Data$GFAP, Biomarker_Data$NfL, Biomarker_Data$pT217, Biomarker_Data$Education_coll, Biomarker_Data$APOE_coll)
-```
-
-
-
-```{r, echo=FALSE, warning=FALSE}
 datamat1 = cor(Data_corr[,c(2,3,4,5,6,11, 12, 13)], use="pairwise.complete.obs")
 colnames(datamat1) = c("tau", "pT181", "aB42", "aB40", "a42:40", "GFAP", "NfL" , "pT217")
 rownames(datamat1) = c("tau", "pT181", "aB42", "aB40", "a42:40", "GFAP", "NfL" , "pT217")
 corrplot.mixed(datamat1, upper = 'number', lower = 'ellipse', addCoef.col = 1, bg = "white", addgrid.col = "grey")
-```
-
-#### Box Plots:
-
-```{r, include=FALSE}
-library(ggpubr)
-```
 
 
-
-```{r, echo=FALSE, warning=FALSE}
 ggboxplot(Biomarker_Data2, x = "Cognitive_Status" , y = "pT181", color = "Cognitive_Status" ,  palette = c("#00AFBB", "#E7B800", "#FC4E07"), order = c("Cognitively unimpaired", "MCI", "AD"), ylab = "pT181", xlab = "Cognitive Status", remove = NA) + stat_compare_means(method = "t.test", ref.group = "Cognitively unimpaired") + ggtitle("Boxplot of pT181")
-
-ggboxplot(Biomarker_Data2, x = "Cognitive_Status" , y = "pT217", color = "Cognitive_Status" ,  palette = c("#00AFBB", "#E7B800", "#FC4E07"), order = c("Cognitively unimpaired", "MCI", "AD"), ylab = "pT217", xlab = "Cognitive Status", remove = NA) + stat_compare_means(method = "t.test", ref.group = "Cognitively unimpaired") + ggtitle("Boxplot of pT217")
-
-
-ggboxplot(Biomarker_Data2, x = "Cognitive_Status" , y = "tau", color = "Cognitive_Status",  palette = c("#00AFBB", "#E7B800", "#FC4E07"), order = c("Cognitively unimpaired", "MCI", "AD"), ylab = "tau", xlab = "Cognitive Status",  title = "Boxplot of tTau", remove = NA) + stat_compare_means(method = "t.test", ref.group = "Cognitively unimpaired")
-
-
-ggboxplot(Biomarker_Data2, x = "Cognitive_Status" , y = "aBeta42", color = "Cognitive_Status",  palette = c("#00AFBB", "#E7B800", "#FC4E07"), order = c("Cognitively unimpaired", "MCI", "AD"), ylab = "aBeta42", xlab = "Cognitive Status",  title = "Boxplot of aB42", remove = NA) + stat_compare_means(method = "t.test", ref.group = "Cognitively unimpaired")
-
-
-ggboxplot(Biomarker_Data2, x = "Cognitive_Status" , y = "aBeta40", color = "Cognitive_Status",  palette = c("#00AFBB", "#E7B800", "#FC4E07"), order = c("Cognitively unimpaired", "MCI", "AD"), ylab = "aBeta40", xlab = "Cognitive Status",  title = "Boxplot of aB40", remove = NA) + stat_compare_means(method = "t.test", ref.group = "Cognitively unimpaired")
-
-
-
-ggboxplot(Biomarker_Data2, x = "Cognitive_Status" , y = "aBeta 42:40", color = "Cognitive_Status" ,  palette = c("#00AFBB", "#E7B800", "#FC4E07"), order = c("Cognitively unimpaired", "MCI", "AD"), ylab = "aBeta 42:40", xlab = "Cognitive Status",  title = "Boxplot of aBeta42:40", remove = NA) + stat_compare_means(method = "t.test", ref.group = "Cognitively unimpaired")
-
-
-
-
-ggboxplot(Biomarker_Data2, x = "Cognitive_Status" , y = "GFAP", color = "Cognitive_Status" ,  palette = c("#00AFBB", "#E7B800", "#FC4E07"), order = c("Cognitively unimpaired", "MCI", "AD"), ylab = "GFAP", xlab = "Cognitive Status",  title = "Boxplot of GFAP", remove = NA) + stat_compare_means(method = "t.test", ref.group = "Cognitively unimpaired")
-
-
-ggboxplot(Biomarker_Data2, x = "Cognitive_Status" , y = "NfL", color = "Cognitive_Status" ,  palette = c("#00AFBB", "#E7B800", "#FC4E07"), order = c("Cognitively unimpaired", "MCI", "AD"), ylab = "NfL", xlab = "Cognitive Status",  title = "Boxplot of NfL", remove = NA) + stat_compare_means(method = "t.test", ref.group = "Cognitively unimpaired")
-
-
-ggboxplot(Biomarker_Data2, x = "Cognitive_Status" , y = "BMI", color = "Cognitive_Status",  palette = c("#00AFBB", "#E7B800", "#FC4E07"), order = c("Cognitively unimpaired", "MCI", "AD"), ylab = "BMI", xlab = "Cognitive Status",  title = "Boxplot of BMI", remove = NA) + stat_compare_means(method = "t.test", ref.group = "Cognitively unimpaired")
-```
 
 
 ##### Q-Q Plots: 
 
-
-```{r, include=FALSE}
 library(ggplot2)
 library(tidyr)
 library(purrr)
 library(qqplotr)
-```
 
-
-
-
-```{r, echo=FALSE, warning=FALSE}
 Biomarker_Data21 = pivot_longer(Biomarker_Data2, cols = c(2,3,4,5,6, 7,8, 9, 11))
 my_qqplott = function(.data, .title) {
   ggplot(data= .data, mapping = aes(sample = value)) + stat_qq_band(alpha = 0.05) + stat_qq_line()  + stat_qq_point() + facet_wrap(~ name, scales = "free") + 
     labs(x = "Theoretical Quantiles", y = "Sample Quantiles", title = .title)
 }
-```
-
-
-```{r, echo=FALSE, warning=FALSE}
 qqplots = Biomarker_Data21 %>% split(.$name) %>% imap(my_qqplott)
-```
 
-
-```{r, echo=FALSE, warning=FALSE}
 qqplots$aBeta40
-qqplots$aBeta42
-qqplots$`aBeta 42:40`
-qqplots$pT181
-qqplots$tau
-qqplots$GFAP
-qqplots$NfL
-qqplots$BMI
 
-```
-
-
-
-#### Standarized the Biomarkers: $(X_{ij} - \mu_{j}) / \sigma_{j}$, where $X_{ij}$ is the $i_{th}$ observation for the $j_{th}$ variable, $\mu_{j}$ is the mean of the variable $X_{j}$, and $\sigma_{j}$ is the variance of the variable $X_{j}$. 
-
-
-
-
-```{r, echo=FALSE, warning=FALSE}
-#Biomarker_Data$tau = sqrt(Biomarker_Data$tau)
-#Biomarker_Data$aBeta42 = sqrt(Biomarker_Data$aBeta42)
-#Biomarker_Data$aBeta40 = sqrt(Biomarker_Data$aBeta40)
-#Biomarker_Data$pT217 = sqrt(Biomarker_Data$pT217)
-#Biomarker_Data$pT181 = sqrt(Biomarker_Data$pT181)
-#Biomarker_Data$GFAP = sqrt(Biomarker_Data$GFAP)
-#Biomarker_Data$NfL = sqrt(Biomarker_Data$NfL)
-#Biomarker_Data$BMI = sqrt(Biomarker_Data$BMI)
-#Biomarker_Data$ratio_of_aB42_and_40 = sqrt(Biomarker_Data$ratio_of_aB42_and_40)
-#Biomarker_Data$ratio_of_p181_and_aB42 = sqrt(Biomarker_Data$ratio_of_p181_and_aB42)
-
-Biomarker_Dataa <- Biomarker_Data %>% dplyr::select(Cognitive_Status, tau, pT181, aBeta42, aBeta40,pT217, GFAP, NfL, APOE_Coll, BMI, Age, Race, sex,  Education_Coll,  Stroke,	Cancer,	Diabetes,	MI, `Depression in last 2yrs`,	Hypertension,	Hypercholesterolemia,	`Sleep Apnea`,`Atrial Fibrillation`) 
-Biomarker_Dataa[2 : 8] <- as.data.frame(scale(Biomarker_Dataa[2 : 8]))
-Biomarker_Dataa[10] <- as.data.frame(scale(Biomarker_Dataa[10]))
-Biomarker_Dataa$ratio_of_aB42_and_40 = Biomarker_Dataa$aBeta42/Biomarker_Dataa$aBeta40
-Biomarker_Dataa$ratio_of_p181_and_aB42 = Biomarker_Dataa$pT181/Biomarker_Dataa$aBeta42
-Biomarker_Dataa$Education_Coll = as.factor(Biomarker_Dataa$Education_Coll)
-
-```
 
 
 ##### Forest Plot
 
-```{r, echo=FALSE, include=FALSE}
 library(ggplot2)
 library(metafor)
 library(ggpubr)
 library(dplyr)
 ```
 
-
-
-```{r, echo=FALSE, warning=FALSE}
 Forest_plot_data = Biomarker_Dataa %>% dplyr::select( pT181, pT217, APOE_Coll, BMI, Age, Race, sex,  Education_Coll, GFAP, NfL,tau, aBeta42, aBeta40, ratio_of_aB42_and_40, ratio_of_p181_and_aB42, Stroke,	Cancer,	Diabetes,	MI, `Depression in last 2yrs`,	Hypertension,	Hypercholesterolemia,	`Sleep Apnea`,`Atrial Fibrillation`)
 Forest_plot_data[1 : 2] <- as.data.frame(scale(Forest_plot_data[1 : 2]))
 #model
 model_pT181 = lm(pT181 ~ APOE_Coll + BMI + Age + Race + sex +  Education_Coll + GFAP+ NfL + tau + aBeta42 + aBeta40 + ratio_of_aB42_and_40 + ratio_of_p181_and_aB42 + Stroke +	Cancer +	Diabetes +	MI + `Depression in last 2yrs`+	Hypertension +	Hypercholesterolemia +	`Sleep Apnea` +	`Atrial Fibrillation`, data = Forest_plot_data)
 model_pT217 = lm(pT217 ~ APOE_Coll + BMI + Age + Race + sex +  Education_Coll + GFAP+ NfL + tau + aBeta42 + aBeta40 + ratio_of_aB42_and_40 + ratio_of_p181_and_aB42 + Stroke +	Cancer +	Diabetes +	MI + `Depression in last 2yrs`+	Hypertension +	Hypercholesterolemia +	`Sleep Apnea` +	`Atrial Fibrillation`, data = Forest_plot_data)
 
-#Extract coefficients
 
 coef_pT181 = coef(summary(model_pT181))
 coef_pT217 = coef(summary(model_pT217))
@@ -393,56 +124,18 @@ forest_plot2 = ggplot(forest_data2, aes(y = Variable)) +
 Figure = ggarrange(forest_plot1, forest_plot2, labels = c("A", "B"), ncol = 2, nrow = 1)
 Figure
 
-```
-
-
-
-```{r, echo=FALSE}
-#forest_plot
-```
-
-
-
-
-
-
-```{r, echo=FALSE, out.width="100%", include=FALSE}
-knitr::include_graphics("train_test.png", error = F)
-```
-
-
-
-
 
 
 #### Splitting the data using Cross Validation method: 
 
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
 #Splitting train and test data
 Biomarker_Data11 = Biomarker_Dataa
 Biomarker_Dataa = Biomarker_Data11 %>% filter(Cognitive_Status == "Cognitively unimpaired" | Cognitive_Status == "MCI" | Cognitive_Status == "AD") %>% filter(Race == "White" | Race == "Black")
 Biomarker_Dataa = na.omit(Biomarker_Dataa)
 
-#Biomarker_Data2
-#library(openxlsx)
-#write.xlsx(Biomarker_Dataa, file = "Biomarker_Final_Data.xlsx")
-```
 
 
-
-
-
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
 set.seed(154)
-#test.size = 0.3
-#test_index = createDataPartition(Biomarker_Dataa$Cognitive_Status, p = test.size, list = FALSE)
-#train1 = Biomarker_Dataa[-test_index, ]
-#test1 = Biomarker_Dataa[test_index,]
 nrFolds = 5
 folds = rep_len(1:nrFolds, nrow(Biomarker_Dataa))
 folds = sample(folds, nrow(Biomarker_Dataa))
@@ -451,20 +144,13 @@ for(k in 1:nrFolds) {
   train1 = Biomarker_Dataa[-fold,]
   test1 = Biomarker_Dataa[fold,]
 }
-```
 
-
-```{r}
 Wh_c = table(Biomarker_Dataa$Cognitive_Status)
 Wh_c
 tot = sum(Wh_c)
 Wh_c/tot
-```
-
 
 #### Training data
-
-```{r, echo=FALSE}
 Wh_c_tr = table(train1$Cognitive_Status)
 Wh_c_tr
 tot_tr = sum(Wh_c_tr)
@@ -474,48 +160,23 @@ Wh_c_tr/tot_tr
 #test1 = Biomarker_Dataa[-split,]
 #head(train_data)
 #head(test_data)
-```
 
-#### Testing data
 
-```{r, echo=FALSE}
 Wh_c_te = table(test1$Cognitive_Status)
 Wh_c_te
 tot_te = sum(Wh_c_te)
 Wh_c_te/tot_te
-```
 
 
 
-
-
-
-```{r, include=FALSE}
-require(nnet)
-library(tidyverse)
-library(MASS)
-library(pROC)
-```
-
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
 ##### Model with demographic variables (Age, Race, Sex and Education)
 mod_dem = multinom(Cognitive_Status ~ Age + Race + sex + Education_Coll  , data = train1)
 summary(mod_dem)
 #+ Education_Coll
-```
 
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
 mod_dem_OR = tbl_regression(mod_dem, exponentiate = TRUE , label = list( Education_Coll ~ "Education")) %>% bold_labels() %>% modify_caption("**Demographic Model :Normal cognition as refrence category**")
 mod_dem_OR
-#
-```
-  
 
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
 ##### Overall Prediction and Accuracy
 predictions_dem_train <- predict(mod_dem, train1)
 predictions_dem_test <- predict(mod_dem, test1)
@@ -526,20 +187,9 @@ ta1_test_dem
 #Accuracy
 train_dem = round((sum(diag(ta1_train_dem))/sum(ta1_train_dem))*100, 2)
 test_dem = round((sum(diag(ta1_test_dem))/sum(ta1_test_dem))*100, 2)
-```
 
 
 
-```{r, include=FALSE}
-train_dem
-test_dem
-```
-
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
 ##### ROC Curve: How much a model is capable of distinguishing between classes. 
 p2 = predict(mod_dem, test1, type = 'class')
 confusionMatrix(p2, test1$Cognitive_Status)
@@ -561,282 +211,24 @@ CognitivelyUnimpaired_MCI = auc(CU_MCI)
 AUC = rbind(CognitivelyUnimpaired_AD, CognitivelyUnimpaired_MCI,AD_MCI )
 colnames(AUC) = c("AUC")
 AUC 
-```
 
 
 
 
 
-```{r, include=FALSE}
-##### Distribution of Cognitive status categories: 
-CU_MCI
-CU_AD
-Ad_MCI
-```
 
 
 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
-##### Model with demographic variables and pT181
 
-mod_dem1 = multinom(Cognitive_Status ~ Age + Race + sex + Education_Coll + pT181 , data = train1)
-summary(mod_dem1)
-```
 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
-mod_dem1_OR = tbl_regression(mod_dem1, exponentiate = TRUE , label = list( Education_Coll ~ "Education")) %>% bold_labels() %>% modify_caption("**Model: Normal cognition as reference variable**")
-mod_dem1_OR
-```
 
 
 
 
 
 
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-##### Forest Plot: 
-OR = exp(coef(mod_dem1))
-OR = data.frame(OR)
-OR_transpose = t(OR)
-CI = exp(confint(mod_dem1))
-CI = data.frame(CI)
-OR_CI_MCI = data.frame(round(cbind(OR_transpose[,1], CI[,c(1,2)]), 3))
-OR_CI_MCI = OR_CI_MCI %>% mutate(variable = rownames(OR_CI_MCI))
-#colnames(data.frame(OR_CI_MCI))
-OR_CI_MCI = rename(OR_CI_MCI, c("AOR_MCI" = "OR_transpose...1." , "lower_bound" = "X2.5...MCI" , "upper_bound" = "X97.5...MCI" ))
-col_order1 = c("variable", "AOR_MCI", "lower_bound","upper_bound" )
-OR_CI_MCI = OR_CI_MCI[, col_order1]
-plot1 = OR_CI_MCI[-1,] %>% ggplot(aes(x = reorder(variable, AOR_MCI), y = AOR_MCI)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot1 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-OR_CI_AD = data.frame(round(cbind(OR_transpose[,2], CI[,c(3,4)]), 3))
-OR_CI_AD = OR_CI_AD %>% mutate(variable = rownames(OR_CI_AD))
-#colnames(data.frame(OR_CI_AD))
-OR_CI_AD = rename(OR_CI_AD, c("AOR_AD" = "OR_transpose...2." , "lower_bound" = "X2.5...AD" , "upper_bound" = "X97.5...AD" ))
-col_order2 = c("variable", "AOR_AD", "lower_bound","upper_bound" )
-OR_CI_AD = OR_CI_AD[, col_order2]
-plot2 = OR_CI_AD[-1,] %>% ggplot(aes(x = reorder(variable, AOR_AD), y = AOR_AD)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot2 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-library(sjPlot)
-plot_model(mod_dem1, show.values = T, vline.color = "red", ylim = c(0,6))
-```
-
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-##### Overall Prediction and Accuracy
-predictions_dem1_train <- predict(mod_dem1, train1)
-predictions_dem1_test <- predict(mod_dem1, test1)
-ta1_train_dem1=table(predictions_dem1_train, train1$Cognitive_Status)
-ta1_train_dem1
-ta1_test_dem1=table(predictions_dem1_test, test1$Cognitive_Status)
-ta1_test_dem1
-#Accuracy
-train_dem1 = round((sum(diag(ta1_train_dem1))/sum(ta1_train_dem1))*100, 2)
-test_dem1 = round((sum(diag(ta1_test_dem1))/sum(ta1_test_dem1))*100, 2)
-```
-
-
-
-```{r, include=FALSE}
-train_dem1
-test_dem1
-```
-
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-##### ROC Curve: How much a model is capable of distinguishing between classes.
-p2 = predict(mod_dem1, test1, type = 'class')
-confusionMatrix(p2, test1$Cognitive_Status)
-p2 = predict(mod_dem1, test1, type = 'prob')
-r = multiclass.roc(test1$Cognitive_Status, p2, percent = T)
-rs5 = r[['rocs']]
-CU_MCI = rs5[[1]][[2]]
-CU_AD = rs5[[2]][[2]]
-Ad_MCI = rs5[[3]][[2]]
-plot.roc(CU_AD, col = 'blue', main = 'ROC Curve for Demographic + P181 model')
-plot.roc(Ad_MCI, add = T, col = 'red')
-plot.roc(CU_MCI, add = T, col = 'green')
-legend("topright", c("CU_AD", "Ad_MCI", "CU_MCI"), lty=1,col = c("blue", "red", "green"), bty = "n")
-CognitivelyUnimpaired_AD = auc(CU_AD)
-AD_MCI = auc(Ad_MCI)
-CognitivelyUnimpaired_MCI = auc(CU_MCI)
-AUC = rbind(CognitivelyUnimpaired_AD, CognitivelyUnimpaired_MCI,AD_MCI )
-colnames(AUC) = c("AUC")
-AUC 
-```
-
-
-
-
-```{r, include=FALSE}
-##### Distribution of Cognitive status categories: 
-CU_MCI
-CU_AD
-Ad_MCI
-```
-
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
-##### Model with demographic variables + pT181 + pT217
-mod_dem4 = multinom(Cognitive_Status ~ Age + Race + sex + Education_Coll + pT217 + pT181, data = train1)
-summary(mod_dem4)
-```
-
-
-
-```{r, warning=FALSE, echo=FALSE, message=FALSE, include=FALSE}
-mod_dem4_OR = tbl_regression(mod_dem4, exponentiate = TRUE , label = list( Education_Coll ~ "Education")) %>% bold_labels() %>% modify_caption("**Demographic + pT181 + pT217 Model**")
-mod_dem4_OR
-###### Interpretation: 
-
-###### White participants are 64% less likely than the Black participants to fall in the MCI group than the normal cognition. 
-
-###### Male participants are 114% more likely than the female participants to fall in the MCI group than normal cognition. 
-
-###### Higher pT217 in the MCI group than normal cognition group. 
-
-###### Lower pT181 in the MCI group than normal cognition group.
-
-###### Male participants are 333% more likely than the female participants to fall in the AD group than normal cognition. 
-
-###### Higher educated people are 76% less likely than the lower educated people to fall in the AD group than the normal cognition. 
-
-###### Higher pT217 in the AD group than normal cognition group. 
-
-###### Lower pT181 in the AD group than normal cognition group. 
-
-```
-
-
-
-
-
-
-
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-##### Forest Plot:
-OR = exp(coef(mod_dem4))
-OR = data.frame(OR)
-OR_transpose = t(OR)
-CI = exp(confint(mod_dem4))
-CI = data.frame(CI)
-OR_CI_MCI = data.frame(round(cbind(OR_transpose[,1], CI[,c(1,2)]), 3))
-OR_CI_MCI = OR_CI_MCI %>% mutate(variable = rownames(OR_CI_MCI))
-#colnames(data.frame(OR_CI_MCI))
-OR_CI_MCI = rename(OR_CI_MCI, c("AOR_MCI" = "OR_transpose...1." , "lower_bound" = "X2.5...MCI" , "upper_bound" = "X97.5...MCI" ))
-col_order1 = c("variable", "AOR_MCI", "lower_bound","upper_bound" )
-OR_CI_MCI = OR_CI_MCI[, col_order1]
-plot1 = OR_CI_MCI[-1,] %>% ggplot(aes(x = reorder(variable, AOR_MCI), y = AOR_MCI)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot1 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-OR_CI_AD = data.frame(round(cbind(OR_transpose[,2], CI[,c(3,4)]), 3))
-OR_CI_AD = OR_CI_AD %>% mutate(variable = rownames(OR_CI_AD))
-#colnames(data.frame(OR_CI_AD))
-OR_CI_AD = rename(OR_CI_AD, c("AOR_AD" = "OR_transpose...2." , "lower_bound" = "X2.5...AD" , "upper_bound" = "X97.5...AD" ))
-col_order2 = c("variable", "AOR_AD", "lower_bound","upper_bound" )
-OR_CI_AD = OR_CI_AD[, col_order2]
-plot2 = OR_CI_AD[-1,] %>% ggplot(aes(x = reorder(variable, AOR_AD), y = AOR_AD)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot2 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE, cache=TRUE, include=FALSE}
-library(sjPlot)
-plot_model(mod_dem4, show.values = T, vline.color = "red", ylim = c(0,6))
-```
-
-
-
-
-##### Prediction and Accuracy
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-predictions_dem4_train <- predict(mod_dem4, train1)
-predictions_dem4_test <- predict(mod_dem4, test1)
-ta1_train_dem4=table(predictions_dem4_train, train1$Cognitive_Status)
-ta1_train_dem4
-ta1_test_dem4=table(predictions_dem4_test, test1$Cognitive_Status)
-ta1_test_dem4
-#Accuracy
-train_dem4 = round((sum(diag(ta1_train_dem4))/sum(ta1_train_dem4))*100, 2)
-test_dem4 = round((sum(diag(ta1_test_dem4))/sum(ta1_test_dem4))*100, 2)
-```
-
-
-
-```{r, include=FALSE}
-round(train_dem4, 0)
-round(test_dem4, 0)
-```
-
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-##### ROC Curve:
-p4 = predict(mod_dem4, test1, type = 'class')
-confusionMatrix(p4, test1$Cognitive_Status)
-p4 = predict(mod_dem4, test1, type = 'prob')
-r = multiclass.roc(test1$Cognitive_Status, p4, percent = T)
-rs4 = r[['rocs']]
-CU_MCI = rs4[[1]][[2]]
-CU_AD = rs4[[2]][[2]]
-Ad_MCI = rs4[[3]][[2]]
-plot.roc(CU_AD, col = 'blue', main = 'ROC Curve for Demographic + pT217 + pT181 model')
-plot.roc(Ad_MCI, add = T, col = 'red')
-plot.roc(CU_MCI, add = T, col = 'green')
-legend("topright", c("CU_AD", "Ad_MCI", "CU_MCI"), lty=1,col = c("blue", "red", "green"), bty = "n")
-CognitivelyUnimpaired_AD = round(auc(CU_AD),0)
-AD_MCI = round(auc(Ad_MCI),0)
-CognitivelyUnimpaired_MCI = round(auc(CU_MCI),0)
-AUC = rbind(CognitivelyUnimpaired_AD, CognitivelyUnimpaired_MCI,AD_MCI )
-colnames(AUC) = c("AUC")
-AUC 
-```
-
-
-
-
-```{r, include=FALSE}
-##### Distribution of Cognitive status categories: 
-
-CU_MCI
-CU_AD
-Ad_MCI
-```
 
 
 
@@ -845,36 +237,13 @@ Ad_MCI
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 mod_dem11 = multinom(Cognitive_Status ~ Age + Race + sex + Education_Coll  + pT217 + pT181 + GFAP, data = train1)
 summary(mod_dem11)
-```
 
-
-
-
-```{r, warning=FALSE, echo=FALSE, message=FALSE}
 mod_dem11_OR = tbl_regression(mod_dem11, exponentiate = TRUE , label = list( Education_Coll ~ "Education")) %>% bold_labels() %>% modify_caption("**Demographic + pT217 + pT181 + GFAP Model**")
 mod_dem11_OR
-```
 
-
-###### Interpretation: 
-
-###### White participants are 65% less likely than the Black participants to fall in the MCI group than the normal cognition. 
-
-###### Male participants are 133% more likely than the female participants to fall in the MCI group than normal cognition. 
-
-###### Higher pT217 in the MCI group than normal cognition group. 
-
-###### Male participants are 414% more likely than the female participants to fall in the AD group than normal cognition. 
-
-###### Higher educated people are 76% less likely than the lower educated people to fall in the AD group than the normal cognition. 
-
-###### Higher pT217 in the AD group than normal cognition group. 
-
-###### Higher GFAP in the AD group than normal cognition group. 
 
 ##### Forest Plot:
 
-```{r, echo=FALSE, warning=FALSE}
 OR = exp(coef(mod_dem11))
 OR = data.frame(OR)
 OR_transpose = t(OR)
@@ -890,35 +259,13 @@ plot1 = OR_CI_MCI[-1,] %>% ggplot(aes(x = reorder(variable, AOR_MCI), y = AOR_MC
   geom_point(, shape = 20, size = 4, color = "black") + 
   geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
 plot1 + geom_hline(yintercept = 1, color = "red")
-```
 
-
-
-```{r, echo=FALSE, warning=FALSE}
-OR_CI_AD = data.frame(round(cbind(OR_transpose[,2], CI[,c(3,4)]), 3))
-OR_CI_AD = OR_CI_AD %>% mutate(variable = rownames(OR_CI_AD))
-#colnames(data.frame(OR_CI_AD))
-OR_CI_AD = rename(OR_CI_AD, c("AOR_AD" = "OR_transpose...2." , "lower_bound" = "X2.5...AD" , "upper_bound" = "X97.5...AD" ))
-col_order2 = c("variable", "AOR_AD", "lower_bound","upper_bound" )
-OR_CI_AD = OR_CI_AD[, col_order2]
-plot2 = OR_CI_AD[-1,] %>% ggplot(aes(x = reorder(variable, AOR_AD), y = AOR_AD)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot2 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE}
-library(sjPlot)
-plot_model(mod_dem11, show.values = T, vline.color = "red", ylim = c(0,6))
-```
 
 
 
 
 ##### Prediction and Accuracy
 
-```{r, echo=FALSE, warning=FALSE}
 
 predictions_dem11_train <- predict(mod_dem11, train1)
 predictions_dem11_test <- predict(mod_dem11, test1)
@@ -929,11 +276,8 @@ ta1_test_dem11
 #Accuracy
 train_dem11 = round((sum(diag(ta1_train_dem11))/sum(ta1_train_dem11))*100, 2)
 test_dem11 = round((sum(diag(ta1_test_dem11))/sum(ta1_test_dem11))*100, 2)
-```
 
 
-
-```{r}
 round(train_dem11,0)
 round(test_dem11,0)
 ```
@@ -942,7 +286,7 @@ round(test_dem11,0)
 
 ##### ROC Curve:
 
-```{r, echo=FALSE, warning=FALSE}
+
 
 p11 = predict(mod_dem11, test1, type = 'class')
 confusionMatrix(p11, test1$Cognitive_Status)
@@ -962,291 +306,10 @@ CognitivelyUnimpaired_MCI = round(auc(CU_MCI),0)
 AUC = rbind(CognitivelyUnimpaired_AD, CognitivelyUnimpaired_MCI,AD_MCI )
 colnames(AUC) = c("AUC")
 AUC 
-```
 
-
-##### Distribution of Cognitive status categories: 
-
-```{r}
 CU_MCI
 CU_AD
 Ad_MCI
-```
-
-
-
-
-
-
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
-##### Model with demographic variables  + pT217 + GFAP + APOE + pT181
-mod_dem7 = multinom(Cognitive_Status ~  Age + Race + sex + Education_Coll + pT217 + GFAP + APOE_Coll + pT181, data = train1)
-summary(mod_dem7)
-```
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
-mod_dem7_OR = tbl_regression(mod_dem7, exponentiate = TRUE, label = list( Education_Coll ~ "Education", APOE_Coll ~ "APOE")) %>% bold_labels() %>% modify_caption("**Demo + pT217 + GFAP + APOE + pT181**")
-mod_dem7_OR
-
-###### Interpretation: 
-
-###### White participants are 72% less likely than the Black participants to fall in the MCI group than the normal cognition. 
-
-###### Male participants are 162% more likely than the female participants to fall in the MCI group than normal cognition. 
-
-###### Higher pT217 in the MCI group than normal cognition group. 
-
-###### Participants with 'no e4' are 62% less likely than participants with any e4 to fall in the MCI group than normal cognition. 
-
-###### Male participants are 221% more likely than the female participants to fall in the AD group than normal cognition. 
-
-###### Higher educated people are 84% less likely than the lower educated people to fall in the AD group than the normal cognition. 
-
-###### Higher pT217 in the AD group than normal cognition group. 
-
-###### Higher GFAP in the AD group than normal cognition group. 
-
-
-```
-
-
-
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-##### Forest Plot: 
-OR = exp(coef(mod_dem7))
-OR = data.frame(OR)
-OR_transpose = t(OR)
-CI = exp(confint(mod_dem7))
-CI = data.frame(CI)
-OR_CI_MCI = data.frame(round(cbind(OR_transpose[,1], CI[,c(1,2)]), 3))
-OR_CI_MCI = OR_CI_MCI %>% mutate(variable = rownames(OR_CI_MCI))
-#colnames(data.frame(OR_CI_MCI))
-OR_CI_MCI = rename(OR_CI_MCI, c("AOR_MCI" = "OR_transpose...1." , "lower_bound" = "X2.5...MCI" , "upper_bound" = "X97.5...MCI" ))
-col_order1 = c("variable", "AOR_MCI", "lower_bound","upper_bound" )
-OR_CI_MCI = OR_CI_MCI[, col_order1]
-plot1 = OR_CI_MCI[-1,] %>% ggplot(aes(x = reorder(variable, AOR_MCI), y = AOR_MCI)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot1 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-OR_CI_AD = data.frame(round(cbind(OR_transpose[,2], CI[,c(3,4)]), 3))
-OR_CI_AD = OR_CI_AD %>% mutate(variable = rownames(OR_CI_AD))
-#colnames(data.frame(OR_CI_AD))
-OR_CI_AD = rename(OR_CI_AD, c("AOR_AD" = "OR_transpose...2." , "lower_bound" = "X2.5...AD" , "upper_bound" = "X97.5...AD" ))
-col_order2 = c("variable", "AOR_AD", "lower_bound","upper_bound" )
-OR_CI_AD = OR_CI_AD[, col_order2]
-plot2 = OR_CI_AD[-1,] %>% ggplot(aes(x = reorder(variable, AOR_AD), y = AOR_AD)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot2 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-library(sjPlot)
-plot_model(mod_dem7, show.values = T, vline.color = "red", ylim = c(0,6))
-```
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-##### Prediction and Accuracy
-predictions_dem7_train <- predict(mod_dem7, train1)
-predictions_dem7_test <- predict(mod_dem7, test1)
-ta1_train_dem7=table(predictions_dem7_train, train1$Cognitive_Status)
-ta1_train_dem7
-ta1_test_dem7=table(predictions_dem7_test, test1$Cognitive_Status)
-ta1_test_dem7
-#Accuracy
-train_dem7 = round((sum(diag(ta1_train_dem7))/sum(ta1_train_dem7))*100, 2)
-test_dem7 = round((sum(diag(ta1_test_dem7))/sum(ta1_test_dem7))*100, 2)
-```
-
-
-
-```{r, include=FALSE}
-round(train_dem7, 0)
-round(test_dem7, 0)
-```
-
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-##### ROC Curve:
-p7 = predict(mod_dem7, test1, type = 'class')
-confusionMatrix(p7, test1$Cognitive_Status)
-p7 = predict(mod_dem7, test1, type = 'prob')
-r = multiclass.roc(test1$Cognitive_Status, p7, percent = T)
-rs7 = r[['rocs']]
-CU_MCI = rs7[[1]][[2]]
-CU_AD = rs7[[2]][[2]]
-Ad_MCI = rs7[[3]][[2]]
-plot.roc(CU_AD, col = 'blue', main = 'ROC Curve for Demo + pT217  + GFAP + APOE + pT181')
-plot.roc(Ad_MCI, add = T, col = 'red')
-plot.roc(CU_MCI, add = T, col = 'green')
-legend("topright", c("CU_AD", "Ad_MCI", "CU_MCI"), lty=1,col = c("blue", "red", "green"), bty = "n")
-CognitivelyUnimpaired_AD = round(auc(CU_AD), 0)
-AD_MCI = round(auc(Ad_MCI), 0)
-CognitivelyUnimpaired_MCI = round(auc(CU_MCI), 0)
-AUC = rbind(CognitivelyUnimpaired_AD, CognitivelyUnimpaired_MCI,AD_MCI )
-colnames(AUC) = c("AUC")
-AUC 
-```
-
-
-
-
-
-```{r, include=FALSE}
-##### Distribution of Cognitive status categories: 
-CU_MCI
-CU_AD
-Ad_MCI
-```
-
-
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
-##### Model with demographic variables + tau + pT217 + GFAP + APOE + pT181
-mod_dem71 = multinom(Cognitive_Status ~ Age + Race + sex + tau + pT217 + GFAP + pT181 + APOE_Coll + Education_Coll, data = train1)
-summary(mod_dem71)
-#+ ratio_of_aB42_and_40 
-
-```
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
-mod_dem71_OR = tbl_regression(mod_dem71, exponentiate = TRUE, label = list( Education_Coll ~ "Education", APOE_Coll ~ "APOE")) %>% bold_labels() %>% modify_caption("**Demo  + tau + pT217 + pT181 + GFAP + APOE**")
-mod_dem71_OR
-```
-
- 
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-##### Forest Plot:
-OR = exp(coef(mod_dem71))
-OR = data.frame(OR)
-OR_transpose = t(OR)
-CI = exp(confint(mod_dem71))
-CI = data.frame(CI)
-OR_CI_MCI = data.frame(round(cbind(OR_transpose[,1], CI[,c(1,2)]), 3))
-OR_CI_MCI = OR_CI_MCI %>% mutate(variable = rownames(OR_CI_MCI))
-#colnames(data.frame(OR_CI_MCI))
-OR_CI_MCI = rename(OR_CI_MCI, c("AOR_MCI" = "OR_transpose...1." , "lower_bound" = "X2.5...MCI" , "upper_bound" = "X97.5...MCI" ))
-col_order1 = c("variable", "AOR_MCI", "lower_bound","upper_bound" )
-OR_CI_MCI = OR_CI_MCI[, col_order1]
-plot1 = OR_CI_MCI[-1,] %>% ggplot(aes(x = reorder(variable, AOR_MCI), y = AOR_MCI)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot1 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-OR_CI_AD = data.frame(round(cbind(OR_transpose[,2], CI[,c(3,4)]), 3))
-OR_CI_AD = OR_CI_AD %>% mutate(variable = rownames(OR_CI_AD))
-#colnames(data.frame(OR_CI_AD))
-OR_CI_AD = rename(OR_CI_AD, c("AOR_AD" = "OR_transpose...2." , "lower_bound" = "X2.5...AD" , "upper_bound" = "X97.5...AD" ))
-col_order2 = c("variable", "AOR_AD", "lower_bound","upper_bound" )
-OR_CI_AD = OR_CI_AD[, col_order2]
-plot2 = OR_CI_AD[-1,] %>% ggplot(aes(x = reorder(variable, AOR_AD), y = AOR_AD)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot2 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-library(sjPlot)
-plot_model(mod_dem71, show.values = T, vline.color = "red", ylim = c(0,6))
-```
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-##### Prediction and Accuracy
-predictions_dem71_train <- predict(mod_dem71, train1)
-predictions_dem71_test <- predict(mod_dem71, test1)
-ta1_train_dem71=table(predictions_dem71_train, train1$Cognitive_Status)
-ta1_train_dem71
-ta1_test_dem71=table(predictions_dem71_test, test1$Cognitive_Status)
-ta1_test_dem71
-#Accuracy
-train_dem71 = round((sum(diag(ta1_train_dem71))/sum(ta1_train_dem71))*100, 2)
-test_dem71 = round((sum(diag(ta1_test_dem71))/sum(ta1_test_dem71))*100, 2)
-```
-
-
-
-```{r, include=FALSE}
-train_dem71
-test_dem71
-```
-
-
-
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-##### ROC Curve:
-p71 = predict(mod_dem71, test1, type = 'class')
-confusionMatrix(p71, test1$Cognitive_Status)
-p71 = predict(mod_dem71, test1, type = 'prob')
-r = multiclass.roc(test1$Cognitive_Status, p71, percent = T)
-rs71 = r[['rocs']]
-CU_MCI = rs71[[1]][[2]]
-CU_AD = rs71[[2]][[2]]
-Ad_MCI = rs71[[3]][[2]]
-plot.roc(CU_AD, col = 'blue', main = 'ROC Curve for Demo + pT217 + pT181 + tau + GFAP + APOE')
-plot.roc(Ad_MCI, add = T, col = 'red')
-plot.roc(CU_MCI, add = T, col = 'green')
-legend("topright", c("CU_AD", "Ad_MCI", "CU_MCI"), lty=1,col = c("blue", "red", "green"), bty = "n")
-CognitivelyUnimpaired_AD = auc(CU_AD)
-AD_MCI = auc(Ad_MCI)
-CognitivelyUnimpaired_MCI = auc(CU_MCI)
-AUC = rbind(CognitivelyUnimpaired_AD, CognitivelyUnimpaired_MCI,AD_MCI )
-colnames(AUC) = c("AUC")
-AUC 
-```
-
-
-
-
-
-```{r, include=FALSE}
-##### Distribution of Cognitive status categories: 
-CU_MCI
-CU_AD
-Ad_MCI
-```
-
-
-
-
-
 
 
 
@@ -1256,107 +319,25 @@ Ad_MCI
 
 ##### Stepwise Regression with backward Selection: 
 
-```{r, echo=FALSE, warning=FALSE}
+
 require(nnet)
 library(tidyverse)
 library(caret)
 library(MASS)
 train1= na.omit(train1)
 #intercept_only <- multinom(Cognitive_Status ~ 1, data=train1)
-mod1 = multinom(Cognitive_Status ~ pT217  + tau + pT181 + GFAP +  NfL + APOE_Coll + Education_Coll + Age + BMI + sex + Race, data = train1)
-#, method = "cv", number = 10 ratio_of_p181_and_aB42  + ratio_of_aB42_and_40 +
+mod1 = multinom(Cognitive_Status ~ pT217  + tau + pT181 + GFAP +  NfL + APOE_Coll + + ratio_of_aB42_and_40 + Education_Coll + Age + BMI + sex + Race, data = train1)
 #summary(mod1)
-#
-#vif(mod1)
-library(car)
-```
-
-
-
-```{r, echo=FALSE, warning=FALSE}
-mod_step = step(mod1, direction = 'backward', trace=0)
-```
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
-summary(mod_step)
-```
 
 ##### Odds Ratio and 95 \% CI
 
-```{r, echo=FALSE, warning=FALSE,  message=FALSE}
 Step_model = tbl_regression(mod_step, exponentiate = TRUE) %>% bold_labels() %>% modify_caption("**Stepwise Model: Backward selection**")
 Step_model
-
-```
-
-
-###### Interpretation: 
-
-###### White participants are 66% less likely than the Black participants to fall in the MCI group than the normal cognition. 
-
-###### Male participants are 151% more likely than the female participants to fall in the MCI group than normal cognition. 
-
-###### Higher(120%) pT217 in the MCI group than normal cognition group. 
-
-
-###### Male participants are 497% more likely than the female participants to fall in the AD group than normal cognition. 
-
-###### Higher educated people are 71% less likely than the lower educated people to fall in the AD group than the normal cognition. 
-
-###### Participants with 'no e4' are 65% less likely than participants with any e4 to fall in the AD group than normal cognition. 
-
-###### Higher pT217 in the AD group than normal cognition group. 
-
-###### Higher GFAP in the AD group than normal cognition group. 
-
-
-
-##### Forest Plot: 
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-OR = exp(coef(mod_step))
-OR = data.frame(OR)
-OR_transpose = t(OR)
-CI = exp(confint(mod_step))
-CI = data.frame(CI)
-OR_CI_MCI = data.frame(round(cbind(OR_transpose[,1], CI[,c(1,2)]), 3))
-OR_CI_MCI = OR_CI_MCI %>% mutate(variable = rownames(OR_CI_MCI))
-#colnames(data.frame(OR_CI_MCI))
-OR_CI_MCI = rename(OR_CI_MCI, c("AOR_MCI" = "OR_transpose...1." , "lower_bound" = "X2.5...MCI" , "upper_bound" = "X97.5...MCI" ))
-col_order1 = c("variable", "AOR_MCI", "lower_bound","upper_bound" )
-OR_CI_MCI = OR_CI_MCI[, col_order1]
-plot1 = OR_CI_MCI[-1,] %>% ggplot(aes(x = reorder(variable, AOR_MCI), y = AOR_MCI)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot1 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE, include=FALSE}
-OR_CI_AD = data.frame(round(cbind(OR_transpose[,2], CI[,c(3,4)]), 3))
-OR_CI_AD = OR_CI_AD %>% mutate(variable = rownames(OR_CI_AD))
-#colnames(data.frame(OR_CI_AD))
-OR_CI_AD = rename(OR_CI_AD, c("AOR_AD" = "OR_transpose...2." , "lower_bound" = "X2.5...AD" , "upper_bound" = "X97.5...AD" ))
-col_order2 = c("variable", "AOR_AD", "lower_bound","upper_bound" )
-OR_CI_AD = OR_CI_AD[, col_order2]
-plot2 = OR_CI_AD[-1,] %>% ggplot(aes(x = reorder(variable, AOR_AD), y = AOR_AD)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot2 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE}
-library(sjPlot)
-plot_model(mod_step, show.values = T, vline.color = "red", ylim = c(0,6))
-```
 
 
 
 ##### Prediction and Accuracy
 
-```{r,echo=FALSE, warning=FALSE}
 predictions_train_f <- predict(mod_step, train1)
 predictions_test_f <- predict(mod_step, test1)
 ta1_train=table(predictions_train_f, train1$Cognitive_Status)
@@ -1367,11 +348,7 @@ step_ta1_train=table(mod_step_predictions_train, train1$Cognitive_Status)
 step_ta1_train
 step_ta1_test=table(mod_step_predictions_test, test1$Cognitive_Status)
 step_ta1_test
-```
 
-
-##### Validation with test data
-```{r, echo=FALSE, warning=FALSE}
 #Accuracy
 #round((sum(diag(ta1_train))/sum(ta1_train))*100, 2)
 train_st = round((sum(diag(step_ta1_train))/sum(step_ta1_train))*100, 2)
@@ -1380,18 +357,9 @@ test_st = round((sum(diag(step_ta1_test))/sum(step_ta1_test))*100, 2)
 ```
 
 
-
-
-```{r, echo=FALSE}
-#round(train_st, 0)
-round(test_st, 2)
-```
-
-
-
 ##### ROC Curve for Stepwise model:
 
-```{r, echo=FALSE, warning=FALSE}
+
 library(pROC)
 p3 = predict(mod_step, test1, type = 'class')
 confusionMatrix(p3, test1$Cognitive_Status)
@@ -1408,28 +376,13 @@ legend("topright", c("CU_AD", "Ad_MCI", "CU_MCI"), lty=1,col = c("blue", "red", 
 CognitivelyUnimpaired_AD = round(auc(CU_AD), 1)
 AD_MCI = round(auc(Ad_MCI), 1)
 CognitivelyUnimpaired_MCI = round(auc(CU_MCI), 1)
-```
+
 
 ##### AUC
-```{r, echo=FALSE, warning=FALSE}
+
 AUC = rbind(CognitivelyUnimpaired_AD, CognitivelyUnimpaired_MCI,AD_MCI )
 colnames(AUC) = c("AUC")
 AUC 
-```
-
-
-##### Distribution of Cognitive status categories: 
-
-
-```{r}
-CU_MCI
-CU_AD
-Ad_MCI
-```
-
-
-
-
 
 
 
@@ -1437,7 +390,7 @@ Ad_MCI
 
 ##### Stepwise Regression with both Selection: 
 
-```{r, echo=FALSE, warning=FALSE}
+`
 require(nnet)
 library(tidyverse)
 library(caret)
@@ -1445,77 +398,24 @@ library(MASS)
 train1= na.omit(train1)
 #intercept_only <- multinom(Cognitive_Status ~ 1, data=train1)
 mod2 = multinom(Cognitive_Status ~ pT217  + tau + pT181  + GFAP +  NfL + APOE_Coll + Education_Coll + Age + BMI + sex + Race, data = train1)
-#, method = "cv", number = 10
-#summary(mod1).ratio_of_aB42_and_40  + ratio_of_p181_and_aB42 
-#
-#vif(mod2)
-```
 
 
 
-```{r, echo=FALSE, warning=FALSE}
 mod_step = stepAIC(mod2, direction = "both", trace = T)
-```
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
 summary(mod_step)
-#vif(mod_step)
-```
 
 ##### Odds Ratio and 95 \% CI
 
-```{r, echo=FALSE, warning=FALSE,  message=FALSE}
 Step_model = tbl_regression(mod_step, exponentiate = TRUE) %>% bold_labels() %>% modify_caption("**Stepwise Model: both selection**")
 Step_model
-```
 
 
-##### Forest Plot: 
-
-```{r, echo=FALSE, warning=FALSE}
-OR = exp(coef(mod_step))
-OR = data.frame(OR)
-OR_transpose = t(OR)
-CI = exp(confint(mod_step))
-CI = data.frame(CI)
-OR_CI_MCI = data.frame(round(cbind(OR_transpose[,1], CI[,c(1,2)]), 3))
-OR_CI_MCI = OR_CI_MCI %>% mutate(variable = rownames(OR_CI_MCI))
-#colnames(data.frame(OR_CI_MCI))
-OR_CI_MCI = rename(OR_CI_MCI, c("AOR_MCI" = "OR_transpose...1." , "lower_bound" = "X2.5...MCI" , "upper_bound" = "X97.5...MCI" ))
-col_order1 = c("variable", "AOR_MCI", "lower_bound","upper_bound" )
-OR_CI_MCI = OR_CI_MCI[, col_order1]
-plot1 = OR_CI_MCI[-1,] %>% ggplot(aes(x = reorder(variable, AOR_MCI), y = AOR_MCI)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot1 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE}
-OR_CI_AD = data.frame(round(cbind(OR_transpose[,2], CI[,c(3,4)]), 3))
-OR_CI_AD = OR_CI_AD %>% mutate(variable = rownames(OR_CI_AD))
-#colnames(data.frame(OR_CI_AD))
-OR_CI_AD = rename(OR_CI_AD, c("AOR_AD" = "OR_transpose...2." , "lower_bound" = "X2.5...AD" , "upper_bound" = "X97.5...AD" ))
-col_order2 = c("variable", "AOR_AD", "lower_bound","upper_bound" )
-OR_CI_AD = OR_CI_AD[, col_order2]
-plot2 = OR_CI_AD[-1,] %>% ggplot(aes(x = reorder(variable, AOR_AD), y = AOR_AD)) +
-  geom_point(, shape = 20, size = 4, color = "black") + 
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound, width = 0.5, color = "darkgreen")) + coord_flip()
-plot2 + geom_hline(yintercept = 1, color = "red")
-```
-
-
-```{r, echo=FALSE, warning=FALSE}
-library(sjPlot)
-plot_model(mod_step, show.values = T, vline.color = "red", ylim = c(0,6))
-```
 
 
 
 ##### Prediction and Accuracy
 
-```{r,echo=FALSE, warning=FALSE}
+
 predictions_train_f <- predict(mod_step, train1)
 predictions_test_f <- predict(mod_step, test1)
 ta1_train=table(predictions_train_f, train1$Cognitive_Status)
@@ -1526,31 +426,22 @@ step_ta1_train=table(mod_step_predictions_train, train1$Cognitive_Status)
 step_ta1_train
 step_ta1_test=table(mod_step_predictions_test, test1$Cognitive_Status)
 step_ta1_test
-```
+
 
 
 ##### Validation with train and test data
-```{r, echo=FALSE, warning=FALSE}
+
 #Accuracy
 #round((sum(diag(ta1_train))/sum(ta1_train))*100, 2)
 train_st = round((sum(diag(step_ta1_train))/sum(step_ta1_train))*100, 2)
 #round((sum(diag(ta1_test))/sum(ta1_test))*100, 2)
 test_st = round((sum(diag(step_ta1_test))/sum(step_ta1_test))*100, 2)
-```
-
-
-
-
-```{r, echo=FALSE}
-#round(train_st, 0)
-round(test_st, 2)
-```
 
 
 
 ##### ROC Curve for Stepwise model:
 
-```{r, echo=FALSE, warning=FALSE}
+
 library(pROC)
 p3 = predict(mod_step, test1, type = 'class')
 confusionMatrix(p3, test1$Cognitive_Status)
@@ -1567,24 +458,14 @@ legend("topright", c("CU_AD", "Ad_MCI", "CU_MCI"), lty=1,col = c("blue", "red", 
 CognitivelyUnimpaired_AD = round(auc(CU_AD),0)
 AD_MCI = round(auc(Ad_MCI),0)
 CognitivelyUnimpaired_MCI = round(auc(CU_MCI),0)
-```
+
 
 ##### AUC
-```{r, echo=FALSE, warning=FALSE}
+
 AUC = rbind(CognitivelyUnimpaired_AD, CognitivelyUnimpaired_MCI,AD_MCI )
 colnames(AUC) = c("AUC")
 AUC 
-```
 
-
-##### Distribution of Cognitive status categories: 
-
-
-```{r}
-CU_MCI
-CU_AD
-Ad_MCI
-```
 
 
 
